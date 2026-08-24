@@ -35,14 +35,13 @@ def main(data_type, num_epochs, num_concepts, loss_weight, concept_selector):
     DATA['test'] = pd.read_csv(f'data/test_{data_type}.csv')
 
     # choose num_concepts features with llm agent
-    match concept_selector:
-        case "llm":
+    if concept_selector == "llm":
             # original concept selector from GlassMol paper
             features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
             features = ast.literal_eval(features)
             print(features)
 
-        case "l1":
+    elif concept_selector == "l1":
             # according to https://scikit-learn.org/stable/modules/feature_selection.html#l1-based-feature-selection
             X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
             print(f"shape before: {X.shape}")
@@ -57,7 +56,7 @@ def main(data_type, num_epochs, num_concepts, loss_weight, concept_selector):
             #print(f"shape after: {X_new.shape}")
             print(features)
 
-        case "tree":
+    elif concept_selector == "tree":
             # according to https://scikit-learn.org/stable/modules/feature_selection.html#tree-based-feature-selection
             X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
             print(f"X = {X.shape}")
@@ -71,13 +70,13 @@ def main(data_type, num_epochs, num_concepts, loss_weight, concept_selector):
             num_concepts = len(features)
             print(f"# of selected features: {num_concepts}")
 
-        case "late-l1":
+    elif concept_selector == "late-l1":
             X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
             features = X.columns.to_list()
             num_concepts = len(features)
 
-        case _:
-            print("choose a valid concept selector method")
+    else:
+        print("choose a valid concept selector method")
 
 
     with open(f'model_output_dir/features_llm_{data_type}_{concept_selector}.pkl', 'wb') as f:
