@@ -33,9 +33,9 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
 
     # load data
     DATA = {}
-    DATA['train'] = pd.read_csv(f'{in_data_folder}/train.csv')
-    DATA['val'] = pd.read_csv(f'{in_data_folder}/val.csv')
-    DATA['test'] = pd.read_csv(f'{in_data_folder}/test.csv')
+    DATA['train'] = pd.read_csv(f'{in_data_folder}/train_{data_type}.csv')
+    DATA['val'] = pd.read_csv(f'{in_data_folder}/val_{data_type}.csv')
+    DATA['test'] = pd.read_csv(f'{in_data_folder}/test_{data_type}.csv')
 
     # choose num_concepts features with llm agent
     if concept_selector == "llm":
