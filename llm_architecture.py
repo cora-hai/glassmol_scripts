@@ -165,7 +165,8 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
                 predict_labels = np.append(predict_labels, (XtoY_output[0].squeeze().cpu() > 0.5) == label.bool().cpu())
 
             val_accuracy = predict_labels.sum() / len(predict_labels)
-            
+
+        print(f"{val_accuracy = }")
         if val_accuracy > best_acc_score:
             best_acc_score = val_accuracy
             torch.save(model, f'{model_folder}/model_llm_{data_type}_{concept_selector}.pth')
