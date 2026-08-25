@@ -40,7 +40,7 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
     # choose num_concepts features with llm agent
     if concept_selector == "llm":
         # original concept selector from GlassMol paper
-        features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
+        features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID', 'Label']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
         features = ast.literal_eval(features)
         print(features)
 
