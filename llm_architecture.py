@@ -208,11 +208,12 @@ if __name__ == "__main__":
 
     # make this scripts usable on cluster -> add arguments for folder locations
     ap = argparse.ArgumentParser()
+    ap.add_argument("--config", type = str, help = "path to config yaml file")
     ap.add_argument("--data-dir", type = str, help = "path to input data directory")
     ap.add_argument("--output-dir", type = str, help = "path to directory where outputs and logs will be saved")
     args = ap.parse_args()
 
-    with open('args.yaml', 'r') as f:
+    with open(args.config, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     set_seed(config['seed'])
