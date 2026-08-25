@@ -201,8 +201,8 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
 
         with open(f'{model_folder}/test_loader_llm_{data_type}_{concept_selector}.pkl', 'wb') as f:
             pkl.dump(test_loader, f)
-        print(f'Test Acc = {test_accuracy*100}', flush = True)
-        print(f'Test roc_auc_score = {roc_auc_score(true_labels, predictions)}', flush = True)
+        print(f'Test Acc = {test_accuracy*100}')
+        print(f'Test roc_auc_score = {roc_auc_score(true_labels, predictions)}')
 
 if __name__ == "__main__":
 
