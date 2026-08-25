@@ -39,44 +39,44 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
 
     # choose num_concepts features with llm agent
     if concept_selector == "llm":
-            # original concept selector from GlassMol paper
-            features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
-            features = ast.literal_eval(features)
-            print(features)
+        # original concept selector from GlassMol paper
+        features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
+        features = ast.literal_eval(features)
+        print(features)
 
     elif concept_selector == "l1":
-            # according to https://scikit-learn.org/stable/modules/feature_selection.html#l1-based-feature-selection
-            X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
-            print(f"shape before: {X.shape}")
-            # train linear support vector classifier with L1 penalty for "feature selection"
-            lsvc = LinearSVC(C=0.01, penalty = "l1", dual = False).fit(X,y)     # C = regularisation parameter, strength inversely proportional to C
-            selector = SelectFromModel(lsvc, prefit = True)
-            #X_new = selector.transform(X)
-            # get selected features
-            feature_mask = selector.get_support()
-            features = X.columns[feature_mask].tolist()
-            num_concepts = len(features)
-            #print(f"shape after: {X_new.shape}")
-            print(features)
+        # according to https://scikit-learn.org/stable/modules/feature_selection.html#l1-based-feature-selection
+        X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
+        print(f"shape before: {X.shape}")
+        # train linear support vector classifier with L1 penalty for "feature selection"
+        lsvc = LinearSVC(C=0.01, penalty = "l1", dual = False).fit(X,y)     # C = regularisation parameter, strength inversely proportional to C
+        selector = SelectFromModel(lsvc, prefit = True)
+        #X_new = selector.transform(X)
+        # get selected features
+        feature_mask = selector.get_support()
+        features = X.columns[feature_mask].tolist()
+        num_concepts = len(features)
+        #print(f"shape after: {X_new.shape}")
+        print(features)
 
     elif concept_selector == "tree":
-            # according to https://scikit-learn.org/stable/modules/feature_selection.html#tree-based-feature-selection
-            X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
-            print(f"X = {X.shape}")
+        # according to https://scikit-learn.org/stable/modules/feature_selection.html#tree-based-feature-selection
+        X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
+        print(f"X = {X.shape}")
 
-            # maybe max_features nutzen für feste Anzahl an concepts?
-            clf = ExtraTreesClassifier(n_estimators = 30, random_state = 42).fit(X,y)  # n_estimators = number of trees in the forest
-            selector = SelectFromModel(clf, prefit = True)
-            feature_mask = selector.get_support()
-            features = X.columns[feature_mask].tolist()
-            print(features)
-            num_concepts = len(features)
-            print(f"# of selected features: {num_concepts}")
+        # maybe max_features nutzen für feste Anzahl an concepts?
+        clf = ExtraTreesClassifier(n_estimators = 30, random_state = 42).fit(X,y)  # n_estimators = number of trees in the forest
+        selector = SelectFromModel(clf, prefit = True)
+        feature_mask = selector.get_support()
+        features = X.columns[feature_mask].tolist()
+        print(features)
+        num_concepts = len(features)
+        print(f"# of selected features: {num_concepts}")
 
     elif concept_selector == "late-l1":
-            X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
-            features = X.columns.to_list()
-            num_concepts = len(features)
+        X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
+        features = X.columns.to_list()
+        num_concepts = len(features)
 
     else:
         print("choose a valid concept selector method")
