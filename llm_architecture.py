@@ -212,7 +212,7 @@ if __name__ == "__main__":
     ap.add_argument("--output-dir", type = str, help = "path to directory where outputs and logs will be saved")
     args = ap.parse_args()
 
-    with open('args_toydata.yaml', 'r') as f:
+    with open('args.yaml', 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     set_seed(config['seed'])
