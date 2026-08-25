@@ -1,4 +1,5 @@
 import sys
+from apetokenizer.src.apetokenizer import ape_tokenizer
 from apetokenizer.src.apetokenizer.ape_tokenizer import APETokenizer
 import pandas as pd
 from transformers import AutoModelForSequenceClassification
@@ -13,13 +14,15 @@ import pickle as pkl
 from utils import MyDataset
 import yaml
 
+import argparse
+
 from sklearn.svm import LinearSVC
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectFromModel
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def main(data_type, num_epochs, num_concepts, loss_weight, concept_selector):
+def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss_weight, concept_selector):
 
     tokenizer = APETokenizer()
     tokenizer.load_vocabulary('apetokenizer/tokenizer.json')
@@ -30,9 +33,9 @@ def main(data_type, num_epochs, num_concepts, loss_weight, concept_selector):
 
     # load data
     DATA = {}
-    DATA['train'] = pd.read_csv(f'data/train_{data_type}.csv')
-    DATA['val'] = pd.read_csv(f'data/val_{data_type}.csv')
-    DATA['test'] = pd.read_csv(f'data/test_{data_type}.csv')
+    DATA['train'] = pd.read_csv(f'{in_data_folder}/train_{data_type}.csv')
+    DATA['val'] = pd.read_csv(f'{in_data_folder}/val_{data_type}.csv')
+    DATA['test'] = pd.read_csv(f'{in_data_folder}/test_{data_type}.csv')
 
     # choose num_concepts features with llm agent
     if concept_selector == "llm":
@@ -79,7 +82,7 @@ def main(data_type, num_epochs, num_concepts, loss_weight, concept_selector):
         print("choose a valid concept selector method")
 
 
-    with open(f'model_output_dir/features_llm_{data_type}_{concept_selector}.pkl', 'wb') as f:
+    with open(f'{model_folder}/features_llm_{data_type}_{concept_selector}.pkl', 'wb') as f:
         pkl.dump(features, f)
 
     # means and std for standardization
@@ -165,12 +168,12 @@ def main(data_type, num_epochs, num_concepts, loss_weight, concept_selector):
             
         if val_accuracy > best_acc_score:
             best_acc_score = val_accuracy
-            torch.save(model, f'model_output_dir/model_llm_{data_type}_{concept_selector}.pth')
-            torch.save(ModelXtoCtoY_layer, f'model_output_dir/ModelXtoCtoY_layer_llm_{data_type}_{concept_selector}.pth')
+            torch.save(model, f'{model_folder}/model_llm_{data_type}_{concept_selector}.pth')
+            torch.save(ModelXtoCtoY_layer, f'{model_folder}/ModelXtoCtoY_layer_llm_{data_type}_{concept_selector}.pth')
 
     ######### test #########
-    model = torch.load(f'model_output_dir/model_llm_{data_type}_{concept_selector}.pth', weights_only=False)
-    ModelXtoCtoY_layer = torch.load(f'model_output_dir/ModelXtoCtoY_layer_llm_{data_type}_{concept_selector}.pth', weights_only=False) 
+    model = torch.load(f'm{model_folder}/model_llm_{data_type}_{concept_selector}.pth', weights_only=False)
+    ModelXtoCtoY_layer = torch.load(f'{model_folder}/ModelXtoCtoY_layer_llm_{data_type}_{concept_selector}.pth', weights_only=False) 
     model.eval()
     ModelXtoCtoY_layer.eval()
 
@@ -196,12 +199,18 @@ def main(data_type, num_epochs, num_concepts, loss_weight, concept_selector):
 
         test_accuracy = predict_labels.sum() / len(predict_labels)
 
-        with open(f'model_output_dir/test_loader_llm_{data_type}_{concept_selector}.pkl', 'wb') as f:
+        with open(f'{model_folder}/test_loader_llm_{data_type}_{concept_selector}.pkl', 'wb') as f:
             pkl.dump(test_loader, f)
         print(f'Test Acc = {test_accuracy*100}')
         print(f'Test roc_auc_score = {roc_auc_score(true_labels, predictions)}')
 
 if __name__ == "__main__":
+
+    # make this scripts usable on cluster -> add arguments for folder locations
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data-dir", type = str, help = "path to input data directory")
+    ap.add_argument("--output-dir", type = str, help = "path to directory where outputs and logs will be saved")
+    args = ap.parse_args()
 
     with open('args_toydata.yaml', 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
@@ -213,4 +222,4 @@ if __name__ == "__main__":
     loss_weight = config['loss_weight']
     concept_selector = config["concept_selector"]
 
-    main(data_type, num_epochs, num_concepts, loss_weight, concept_selector)
+    main(args.data_dir, args.output_dir, data_type, num_epochs, num_concepts, loss_weight, concept_selector)
