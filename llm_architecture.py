@@ -22,10 +22,10 @@ from sklearn.feature_selection import SelectFromModel
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss_weight, concept_selector):
+def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_concepts, loss_weight, concept_selector):
 
     tokenizer = APETokenizer()
-    tokenizer.load_vocabulary('apetokenizer/tokenizer.json')
+    tokenizer.load_vocabulary(f'{tok_folder}/tokenizer.json')
     model = AutoModelForSequenceClassification.from_pretrained('mikemayuare/SMILY-APE-BBBP').to(device)
     # print("parameter names:")
     # for name, _ in model.named_parameters():
@@ -209,6 +209,7 @@ if __name__ == "__main__":
     # make this scripts usable on cluster -> add arguments for folder locations
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", type = str, help = "path to config yaml file")
+    ap.add_argument("--tok", type = str, help = "path to ape_tokenizer folder")
     ap.add_argument("--data-dir", type = str, help = "path to input data directory")
     ap.add_argument("--output-dir", type = str, help = "path to directory where outputs and logs will be saved")
     args = ap.parse_args()
@@ -223,4 +224,4 @@ if __name__ == "__main__":
     loss_weight = config['loss_weight']
     concept_selector = config["concept_selector"]
 
-    main(args.data_dir, args.output_dir, data_type, num_epochs, num_concepts, loss_weight, concept_selector)
+    main(args.data_dir, args.output_dir, args.tok, data_type, num_epochs, num_concepts, loss_weight, concept_selector)
