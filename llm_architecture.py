@@ -172,7 +172,7 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
             torch.save(ModelXtoCtoY_layer, f'{model_folder}/ModelXtoCtoY_layer_llm_{data_type}_{concept_selector}.pth')
 
     ######### test #########
-    model = torch.load(f'm{model_folder}/model_llm_{data_type}_{concept_selector}.pth', weights_only=False)
+    model = torch.load(f'{model_folder}/model_llm_{data_type}_{concept_selector}.pth', weights_only=False)
     ModelXtoCtoY_layer = torch.load(f'{model_folder}/ModelXtoCtoY_layer_llm_{data_type}_{concept_selector}.pth', weights_only=False) 
     model.eval()
     ModelXtoCtoY_layer.eval()
