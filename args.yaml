@@ -1,7 +1,7 @@
 # args.yml
 seed: 1
-data_type: 'dili'
+data_type: 'pysmash-func'
 num_epochs: 200
 num_concepts: 29
 loss_weight: 1.0
-concept_selector: "late-l1"
+concept_selector: "llm"
