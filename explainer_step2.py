@@ -44,7 +44,7 @@ if __name__ == "__main__":
     ap.add_argument("--data-dir", type = str, help = "path to input data directory")
     ap.add_argument("--model-type", type = str, help = "llm or gnn")
     ap.add_argument("--dataset", type = str, help = "dataset that the model was trained on")
-    ap.add_argument("--analyze-mol", type = str, help = "ndex of the molecule in the test set to analyze")
+    ap.add_argument("--analyze-mol", type = int, help = "ndex of the molecule in the test set to analyze")
     ap.add_argument("--concept-selector", type = str, help = "concept selection method")
     args = ap.parse_args()
 
