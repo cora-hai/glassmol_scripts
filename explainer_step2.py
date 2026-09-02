@@ -6,9 +6,9 @@ import sys
 import argparse
 
 
-def main(model_dir, data_dir, model_type, dataset, analyze_mol):
+def main(model_dir, data_dir, model_type, dataset, concept_selector, analyze_mol):
 
-    with open(f'{model_dir}/contributions_{model_type}_{dataset}.pkl', 'rb') as f:
+    with open(f'{model_dir}/contributions_{model_type}_{dataset}_{concept_selector}.pkl', 'rb') as f:
         contributions = pkl.load(f)
 
     data = pd.read_csv(f'{data_dir}/test_{dataset}.csv').iloc[analyze_mol]
@@ -45,6 +45,7 @@ if __name__ == "__main__":
     ap.add_argument("--model-type", type = str, help = "llm or gnn")
     ap.add_argument("--dataset", type = str, help = "dataset that the model was trained on")
     ap.add_argument("--analyze-mol", type = str, help = "ndex of the molecule in the test set to analyze")
+    ap.add_argument("--concept-selector", type = str, help = "concept selection method")
     args = ap.parse_args()
 
-    main(args.model_dir, args.data_dir, args.model_type, args.dataset, args.analyze_mol)
+    main(args.model_dir, args.data_dir, args.model_type, args.dataset, args.concept_selector, args.analyze_mol)

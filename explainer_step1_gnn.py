@@ -12,20 +12,20 @@ import argparse
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def main(dataset, model_dir) -> None:
+def main(dataset, model_dir, concept_selector) -> None:
 
     # load the model
-    model = torch.load(f'{model_dir}/model_gnn_{dataset}.pth', weights_only=False).to(device)
-    ModelXtoCtoY_layer = torch.load(f'{model_dir}/ModelXtoCtoY_layer_gnn_{dataset}.pth', weights_only=False).to(device)
+    model = torch.load(f'{model_dir}/model_gnn_{dataset}_{concept_selector}.pth', weights_only=False).to(device)
+    ModelXtoCtoY_layer = torch.load(f'{model_dir}/ModelXtoCtoY_layer_gnn_{dataset}_{concept_selector}.pth', weights_only=False).to(device)
     model.eval()
     ModelXtoCtoY_layer.eval()
 
     # load the saved test loader
-    with open(f'{model_dir}/test_loader_gnn_{dataset}.pkl', 'rb') as f:
+    with open(f'{model_dir}/test_loader_gnn_{dataset}_{concept_selector}.pkl', 'rb') as f:
             test_loader = pkl.load(f)
 
     # load the features
-    with open(f'{model_dir}/features_gnn_{dataset}.pkl', 'rb') as f:
+    with open(f'{model_dir}/features_gnn_{dataset}_{concept_selector}.pkl', 'rb') as f:
         features = pkl.load(f)
 
     # get the contributions for the entire test set
@@ -61,7 +61,7 @@ def main(dataset, model_dir) -> None:
             except:
                 contributions_dict[feature] = ((contributions.T)[i])       
 
-    with open (f'{model_dir}/contributions_gnn_{dataset}.pkl', 'wb') as f:
+    with open (f'{model_dir}/contributions_gnn_{dataset}_{concept_selector}.pkl', 'wb') as f:
         pkl.dump(contributions_dict, f)
 
 
@@ -71,6 +71,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", type = str, help = "dataset that model was trained on")
     ap.add_argument("--model-dir", type = str, help = "path to load model from and to write contribution files to")
+    ap.add_argument("--concept-selector", type = str, help = "concept selection method")
     args = ap.parse_args()
 
-    main(args.dataset, args.model_dir)
+    main(args.dataset, args.model_dir, args.concept_selector)
