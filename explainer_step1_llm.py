@@ -13,7 +13,7 @@ def main(dataset, model_dir, concept_selector) -> None:
 
     # load the model
     model = torch.load(f'{model_dir}/model_llm_{dataset}_{concept_selector}.pth', weights_only=False)
-    ModelXtoCtoY_layer = torch.load(f'model_output_dir/ModelXtoCtoY_layer_llm_{dataset}_{concept_selector}.pth', weights_only=False)
+    ModelXtoCtoY_layer = torch.load(f'{model_dir}/ModelXtoCtoY_layer_llm_{dataset}_{concept_selector}.pth', weights_only=False)
     ModelXtoCtoY_layer.eval()
     model.eval()
 
