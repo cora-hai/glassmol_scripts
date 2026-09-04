@@ -39,10 +39,25 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
 
     # choose num_concepts features with llm agent
     if concept_selector == "llm":
-        # original concept selector from GlassMol paper
-        features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
-        features = ast.literal_eval(features)
+
+        # introduce while loop to automatically skip invalid concept selections
+        found_valid = False
+
+        while found_valid == False:
+            # original concept selector from GlassMol paper
+            features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
+            features = ast.literal_eval(features)
+
+            try: 
+                valid_test = DATA['train'][features]
+
+            except KeyError:
+                continue
+
+            found_valid = True
+
         print(features)
+
 
     elif concept_selector == "l1":
         # according to https://scikit-learn.org/stable/modules/feature_selection.html#l1-based-feature-selection
@@ -166,7 +181,7 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
 
             val_accuracy = predict_labels.sum() / len(predict_labels)
 
-        print(f"{val_accuracy = }")
+        #print(f"{val_accuracy = }")
         if val_accuracy > best_acc_score:
             best_acc_score = val_accuracy
             torch.save(model, f'{model_folder}/model_llm_{data_type}_{concept_selector}.pth')
