@@ -48,10 +48,15 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
             features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
             features = ast.literal_eval(features)
 
+            # check if all concepts selected by GPT are valid
             try: 
                 valid_test = DATA['train'][features]
 
             except KeyError:
+                continue
+
+            # check if GPT returned the correct number of concepts
+            if len(features) != 40:
                 continue
 
             found_valid = True
