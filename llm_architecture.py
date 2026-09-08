@@ -98,6 +98,11 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
         features = X.columns.to_list()
         num_concepts = len(features)
 
+    elif concept_selector == "no":
+        X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
+        features = X.columns.to_list()
+        num_concepts = len(features)
+
     else:
         print("choose a valid concept selector method")
 
