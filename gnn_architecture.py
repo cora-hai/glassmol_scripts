@@ -206,6 +206,8 @@ def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss
             predictions = np.append(predictions, XtoY_output[0].squeeze().cpu().numpy())
             true_labels = np.append(true_labels, data.y.squeeze().cpu().numpy())
 
+    print(f"{predictions = }")
+    print(f"{true_labels = }")
     print(f"Test Acc = {accuracy_score(true_labels, predictions)}", flush = True)
     print(f'Test roc_auc_score = {roc_auc_score(true_labels, predictions)}', flush = True)
 
