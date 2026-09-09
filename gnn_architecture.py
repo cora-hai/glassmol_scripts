@@ -194,6 +194,7 @@ def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss
     with torch.no_grad():
         model.eval()
         ModelXtoCtoY_layer.eval()
+        predict_labels = np.array([])
         predictions = np.array([])
         true_labels = np.array([])
         for data in test_loader:
@@ -204,11 +205,14 @@ def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss
             XtoY_output = outputs[0:1]
 
             predictions = np.append(predictions, XtoY_output[0].squeeze().cpu().numpy())
+            predict_labels = np.append(predict_labels, (XtoY_output[0].squeeze() > 0).int().cpu().numpy())
+
             true_labels = np.append(true_labels, data.y.squeeze().cpu().numpy())
 
     print(f"{predictions = }")
+    print(f"{predict_labels = }")
     print(f"{true_labels = }")
-    print(f"Test Acc = {accuracy_score(true_labels, predictions)}", flush = True)
+    print(f"Test Acc = {accuracy_score(true_labels, predict_labels)}", flush = True)
     print(f'Test roc_auc_score = {roc_auc_score(true_labels, predictions)}', flush = True)
 
     with open(f'{model_folder}/test_loader_gnn_{data_type}_{concept_selector}.pkl', 'wb') as f:
