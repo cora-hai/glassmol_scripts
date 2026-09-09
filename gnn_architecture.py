@@ -2,7 +2,7 @@ from torch_geometric.loader import DataLoader
 import pandas as pd
 import torch
 from torch_geometric.utils.smiles import from_smiles
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 import numpy as np
 import sys
 from utils import set_seed, agent
@@ -206,6 +206,7 @@ def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss
             predictions = np.append(predictions, XtoY_output[0].squeeze().cpu().numpy())
             true_labels = np.append(true_labels, data.y.squeeze().cpu().numpy())
 
+    print(f"Test Acc = {accuracy_score(true_labels, predictions)}", flush = True)
     print(f'Test roc_auc_score = {roc_auc_score(true_labels, predictions)}', flush = True)
 
     with open(f'{model_folder}/test_loader_gnn_{data_type}_{concept_selector}.pkl', 'wb') as f:
