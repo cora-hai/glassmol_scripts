@@ -185,12 +185,12 @@ def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss
         if val_accuracy > best_acc_score:
             best_acc_score = val_accuracy
             torch.save(model, f'{model_folder}/model_gnn_{data_type}_{concept_selector}.pth')
-            torch.save(ModelXtoCtoY_layer, f'm{model_folder}/ModelXtoCtoY_layer_gnn_{data_type}_{concept_selector}.pth')
+            torch.save(ModelXtoCtoY_layer, f'{model_folder}/ModelXtoCtoY_layer_gnn_{data_type}_{concept_selector}.pth')
 
 
     ######### test #########
     model = torch.load(f'{model_folder}/model_gnn_{data_type}_{concept_selector}.pth', weights_only=False)
-    ModelXtoCtoY_layer = torch.load(f'm{model_folder}/ModelXtoCtoY_layer_gnn_{data_type}_{concept_selector}.pth', weights_only=False)
+    ModelXtoCtoY_layer = torch.load(f'{model_folder}/ModelXtoCtoY_layer_gnn_{data_type}_{concept_selector}.pth', weights_only=False)
     with torch.no_grad():
         model.eval()
         ModelXtoCtoY_layer.eval()
