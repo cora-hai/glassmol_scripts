@@ -204,13 +204,8 @@ def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss
             XtoY_output = outputs[0:1]
 
             predictions = np.append(predictions, XtoY_output[0].squeeze().cpu().numpy())
-            predict_labels = np.append(predict_labels, (XtoY_output[0].squeeze().to(torch.float32).cpu() > 0.0) == label.bool().cpu())
-
             true_labels = np.append(true_labels, data.y.squeeze().cpu().numpy())
 
-    test_accuracy = predict_labels.sum() / len(predict_labels)
-
-    print(f'Test Acc = {test_accuracy*100}', flush = True)
     print(f'Test roc_auc_score = {roc_auc_score(true_labels, predictions)}', flush = True)
 
     with open(f'{model_folder}/test_loader_gnn_{data_type}_{concept_selector}.pkl', 'wb') as f:
