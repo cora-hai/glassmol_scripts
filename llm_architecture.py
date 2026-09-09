@@ -67,16 +67,16 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
     elif concept_selector == "l1":
         # according to https://scikit-learn.org/stable/modules/feature_selection.html#l1-based-feature-selection
         X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
-        print(f"shape before: {X.shape}")
+
         # train linear support vector classifier with L1 penalty for "feature selection"
         lsvc = LinearSVC(C=0.01, penalty = "l1", dual = False).fit(X,y)     # C = regularisation parameter, strength inversely proportional to C
         selector = SelectFromModel(lsvc, prefit = True)
-        #X_new = selector.transform(X)
+    
         # get selected features
         feature_mask = selector.get_support()
         features = X.columns[feature_mask].tolist()
         num_concepts = len(features)
-        #print(f"shape after: {X_new.shape}")
+    
         print(features)
 
     elif concept_selector == "tree":
@@ -91,7 +91,7 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
         features = X.columns[feature_mask].tolist()
         print(features)
         num_concepts = len(features)
-        print(f"# of selected features: {num_concepts}")
+
 
     elif concept_selector == "late-l1":
         X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]

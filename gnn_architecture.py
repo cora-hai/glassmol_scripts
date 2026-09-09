@@ -12,19 +12,16 @@ import pickle as pkl
 from utils import MolNet
 import yaml
 
+import argparse
+
+from sklearn.svm import LinearSVC
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.feature_selection import SelectFromModel
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-with open('args.yaml', 'r') as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
-
-set_seed(config['seed'])
-data_type = config['data_type']
-num_epochs = config['num_epochs']
-num_concepts = config['num_concepts']
-loss_weight = config['loss_weight']
-
 # molecules are PyG objects, so we need to attach the y and concepts to the object
-def attach_y_and_concepts(row):
+def attach_y_and_concepts(row, features):
     row['Drug'].y = torch.tensor(row['Y'], dtype=torch.float32)
     row['Drug'].target_names = row['Drug_ID']
     try:
@@ -33,115 +30,210 @@ def attach_y_and_concepts(row):
         pass
     return row['Drug']
 
-# load data
-train_data = pd.read_csv(f"data/train_{data_type}.csv")
-test_data = pd.read_csv(f"data/test_{data_type}.csv")
-val_data = pd.read_csv(f"data/val_{data_type}.csv")
+def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss_weight, concept_selector):
 
-# choose num_concepts features with llm agent
-features = agent(data_type, train_data.drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts)
-features = ast.literal_eval(features)
-print(f"selected concepts = {features}")
+    # load data
+    DATA = {}
+    DATA["train"] = pd.read_csv(f"{in_data_folder}/train_{data_type}.csv")
+    DATA["val"] = pd.read_csv(f"{in_data_folder}/test_{data_type}.csv")
+    DATA["test"] = pd.read_csv(f"{in_data_folder}/val_{data_type}.csv")
 
-with open(f'model_output_dir/features_gnn_{data_type}.pkl', 'wb') as f:
-    pkl.dump(features, f)
+    # choose num_concepts features with llm agent
+    if concept_selector == "llm":
 
-# turn the SMILES strings into PyG objects
-train_data['Drug'] = train_data['Drug'].apply(from_smiles)
-test_data['Drug'] = test_data['Drug'].apply(from_smiles)
-val_data['Drug'] = val_data['Drug'].apply(from_smiles)  
+        # introduce while loop to automatically skip invalid concept selections
+        found_valid = False
 
-# attach the y and concepts to the PyG objects
-train_data['Drug'] = train_data.apply(attach_y_and_concepts, axis=1)
-test_data['Drug'] = test_data.apply(attach_y_and_concepts, axis=1)
-val_data['Drug'] = val_data.apply(attach_y_and_concepts, axis=1)
+        while found_valid == False:
+            # original concept selector from GlassMol paper
+            features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
+            features = ast.literal_eval(features)
 
-# create the data loaders
-train_loader = DataLoader(train_data['Drug'], batch_size=32, shuffle=True)
-val_loader = DataLoader(val_data['Drug'], batch_size=32, shuffle=False)
-test_loader = DataLoader(test_data['Drug'], batch_size=32, shuffle=False)
+            # check if all concepts selected by GPT are valid
+            try: 
+                valid_test = DATA['train'][features]
 
-# initialize the model, optimizer, and loss functions
-ModelXtoCtoY_layer = ModelXtoCtoY_function(num_concepts=num_concepts, expand_dim=0).to(device)
-model = MolNet(in_channels=train_data['Drug'][1].x.shape[1], hidden_channels=768).to(device)
-optimizer = torch.optim.AdamW(list(model.parameters()) + list(ModelXtoCtoY_layer.parameters()), lr=2e-4)
-loss_C = torch.nn.L1Loss().to(device)
-loss_Y = torch.nn.BCEWithLogitsLoss().to(device)
+            except KeyError:
+                continue
 
-best_acc_score = 0
-for epoch in range(num_epochs):
-    ######### train #########
-    model.train()
-    for data in train_loader:
-        data = data.to(device)
-        #print(f"data: {data.shape}")
-        #print(f"concepts: {data.concepts.shape}")
-        #print(f"squeezed concepts: {data.concepts.squeeze().shape}")
-        optimizer.zero_grad()
-        output = model(data)
-        #print(f"output: {output.shape}")
-        outputs = ModelXtoCtoY_layer(output)
-        XtoC_output = outputs[1:] 
-        XtoY_output = outputs[0:1]
+            # check if GPT returned the correct number of concepts
+            if len(features) != 40:
+                continue
 
-        # XtoC_loss
-        XtoC_output = torch.stack(XtoC_output, dim=1).squeeze()
-        XtoC_loss = loss_C(torch.flatten(XtoC_output), data.concepts.squeeze())
-        
-        # XtoY_loss
-        XtoY_loss = loss_Y(XtoY_output[0].squeeze(), data.y.squeeze())
-        
-        loss = XtoY_loss + XtoC_loss * loss_weight
-        loss.backward()
-        optimizer.step()
+            found_valid = True
 
-    ######### val #########
-    model.eval()
-    ModelXtoCtoY_layer.eval()
+        print(features)
 
-    val_accuracy = 0.
-    predictions = np.array([])
-    true_labels = np.array([])
 
-    with torch.no_grad():
-        for batch in val_loader:
-            batch = batch.to(device)
-            output = model(batch)
+    elif concept_selector == "l1":
+        # according to https://scikit-learn.org/stable/modules/feature_selection.html#l1-based-feature-selection
+        X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
+
+        # train linear support vector classifier with L1 penalty for "feature selection"
+        lsvc = LinearSVC(C=0.01, penalty = "l1", dual = False).fit(X,y)     # C = regularisation parameter, strength inversely proportional to C
+        selector = SelectFromModel(lsvc, prefit = True)
+    
+        # get selected features
+        feature_mask = selector.get_support()
+        features = X.columns[feature_mask].tolist()
+        num_concepts = len(features)
+    
+        print(features)
+
+    elif concept_selector == "tree":
+        # according to https://scikit-learn.org/stable/modules/feature_selection.html#tree-based-feature-selection
+        X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
+        print(f"X = {X.shape}")
+
+        # maybe max_features nutzen für feste Anzahl an concepts?
+        clf = ExtraTreesClassifier(n_estimators = 30, random_state = 42).fit(X,y)  # n_estimators = number of trees in the forest
+        selector = SelectFromModel(clf, prefit = True)
+        feature_mask = selector.get_support()
+        features = X.columns[feature_mask].tolist()
+        print(features)
+        num_concepts = len(features)
+
+
+    elif concept_selector == "late-l1":
+        X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
+        features = X.columns.to_list()
+        num_concepts = len(features)
+
+    elif concept_selector == "no":
+        X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
+        features = X.columns.to_list()
+        num_concepts = len(features)
+
+    else:
+        print("choose a valid concept selector method")
+
+
+    with open(f'{model_folder}/features_gnn_{data_type}_{concept_selector}.pkl', 'wb') as f:
+        pkl.dump(features, f)
+
+    # turn the SMILES strings into PyG objects
+    DATA["train"]['Drug'] = DATA["train"]['Drug'].apply(from_smiles)
+    DATA["val"]['Drug'] = DATA["val"]['Drug'].apply(from_smiles)
+    DATA["test"]['Drug'] = DATA["test"]['Drug'].apply(from_smiles)  
+
+    # attach the y and concepts to the PyG objects
+    DATA["train"]['Drug'] = DATA["train"].apply(attach_y_and_concepts, args = (features,), axis=1)
+    DATA["val"]['Drug'] = DATA["val"].apply(attach_y_and_concepts, args = (features,), axis=1)
+    DATA["test"]['Drug'] = DATA["test"].apply(attach_y_and_concepts, args = (features,), axis=1)
+
+    # create the data loaders
+    train_loader = DataLoader(DATA["train"]['Drug'], batch_size=32, shuffle=True)
+    val_loader = DataLoader(DATA["val"]['Drug'], batch_size=32, shuffle=False)
+    test_loader = DataLoader(DATA["test"]['Drug'], batch_size=32, shuffle=False)
+
+    # initialize the model, optimizer, and loss functions
+    ModelXtoCtoY_layer = ModelXtoCtoY_function(num_concepts=num_concepts, expand_dim=0).to(device)
+    model = MolNet(in_channels=DATA["train"]['Drug'][1].x.shape[1], hidden_channels=768).to(device)
+    optimizer = torch.optim.AdamW(list(model.parameters()) + list(ModelXtoCtoY_layer.parameters()), lr=2e-4)
+    loss_C = torch.nn.L1Loss().to(device)
+    loss_Y = torch.nn.BCEWithLogitsLoss().to(device)
+
+    best_acc_score = 0
+    for epoch in range(num_epochs):
+        ######### train #########
+        model.train()
+        for data in train_loader:
+            data = data.to(device)
+            #print(f"data: {data.shape}")
+            #print(f"concepts: {data.concepts.shape}")
+            #print(f"squeezed concepts: {data.concepts.squeeze().shape}")
+            optimizer.zero_grad()
+            output = model(data)
+            #print(f"output: {output.shape}")
             outputs = ModelXtoCtoY_layer(output)
             XtoC_output = outputs[1:] 
             XtoY_output = outputs[0:1]
 
-            true_labels = np.append(true_labels, batch.y.cpu().numpy())
+            # XtoC_loss
+            XtoC_output = torch.stack(XtoC_output, dim=1).squeeze()
+            XtoC_loss = loss_C(torch.flatten(XtoC_output), data.concepts.squeeze())
+            
+            # XtoY_loss
+            XtoY_loss = loss_Y(XtoY_output[0].squeeze(), data.y.squeeze())
+            
+            loss = XtoY_loss + XtoC_loss * loss_weight
+            loss.backward()
+            optimizer.step()
 
-            predictions = np.append(predictions, (XtoY_output[0].squeeze().cpu() > 0.5) == batch.y.squeeze().cpu())
+        ######### val #########
+        model.eval()
+        ModelXtoCtoY_layer.eval()
 
-    val_accuracy = predictions.sum() / len(predictions)
-        
-    if val_accuracy > best_acc_score:
-        best_acc_score = val_accuracy
-        torch.save(model, f'model_output_dir/model_gnn_{data_type}.pth')
-        torch.save(ModelXtoCtoY_layer, f'model_output_dir/ModelXtoCtoY_layer_gnn_{data_type}.pth')
+        val_accuracy = 0.
+        predictions = np.array([])
+        true_labels = np.array([])
+
+        with torch.no_grad():
+            for batch in val_loader:
+                batch = batch.to(device)
+                output = model(batch)
+                outputs = ModelXtoCtoY_layer(output)
+                XtoC_output = outputs[1:] 
+                XtoY_output = outputs[0:1]
+
+                true_labels = np.append(true_labels, batch.y.cpu().numpy())
+
+                predictions = np.append(predictions, (XtoY_output[0].squeeze().cpu() > 0.5) == batch.y.squeeze().cpu())
+
+        val_accuracy = predictions.sum() / len(predictions)
+            
+        if val_accuracy > best_acc_score:
+            best_acc_score = val_accuracy
+            torch.save(model, f'{model_folder}/model_gnn_{data_type}_{concept_selector}.pth')
+            torch.save(ModelXtoCtoY_layer, f'm{model_folder}/ModelXtoCtoY_layer_gnn_{data_type}_{concept_selector}.pth')
 
 
-######### test #########
-model = torch.load(f'model_output_dir/model_gnn_{data_type}.pth', weights_only=False)
-ModelXtoCtoY_layer = torch.load(f'model_output_dir/ModelXtoCtoY_layer_gnn_{data_type}.pth', weights_only=False)
-with torch.no_grad():
-    model.eval()
-    ModelXtoCtoY_layer.eval()
-    predictions = np.array([])
-    true_labels = np.array([])
-    for data in test_loader:
-        data = data.to(device)
-        output = model(data)
-        outputs = ModelXtoCtoY_layer(output)
-        XtoC_output = outputs[1:] 
-        XtoY_output = outputs[0:1]
+    ######### test #########
+    model = torch.load(f'{model_folder}/model_gnn_{data_type}_{concept_selector}.pth', weights_only=False)
+    ModelXtoCtoY_layer = torch.load(f'm{model_folder}/ModelXtoCtoY_layer_gnn_{data_type}_{concept_selector}.pth', weights_only=False)
+    with torch.no_grad():
+        model.eval()
+        ModelXtoCtoY_layer.eval()
+        predictions = np.array([])
+        true_labels = np.array([])
+        for data in test_loader:
+            data = data.to(device)
+            output = model(data)
+            outputs = ModelXtoCtoY_layer(output)
+            XtoC_output = outputs[1:] 
+            XtoY_output = outputs[0:1]
 
-        predictions = np.append(predictions, XtoY_output[0].squeeze().cpu().numpy())
-        true_labels = np.append(true_labels, data.y.squeeze().cpu().numpy())
+            predictions = np.append(predictions, XtoY_output[0].squeeze().cpu().numpy())
+            predict_labels = np.append(predict_labels, (XtoY_output[0].squeeze().to(torch.float32).cpu() > 0.0) == label.bool().cpu())
 
-print(f'Test roc_auc_score = {roc_auc_score(true_labels, predictions)}')
+            true_labels = np.append(true_labels, data.y.squeeze().cpu().numpy())
 
-with open(f'model_output_dir/test_loader_gnn_{data_type}.pkl', 'wb') as f:
-    pkl.dump(test_loader, f)
+    test_accuracy = predict_labels.sum() / len(predict_labels)
+
+    print(f'Test Acc = {test_accuracy*100}', flush = True)
+    print(f'Test roc_auc_score = {roc_auc_score(true_labels, predictions)}', flush = True)
+
+    with open(f'{model_folder}/test_loader_gnn_{data_type}_{concept_selector}.pkl', 'wb') as f:
+        pkl.dump(test_loader, f)
+
+
+if __name__ == "__main__":
+
+    # make this scripts usable on cluster -> add arguments for folder locations
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--config", type = str, help = "path to config yaml file")
+    ap.add_argument("--data-dir", type = str, help = "path to input data directory")
+    ap.add_argument("--output-dir", type = str, help = "path to directory where outputs and logs will be saved")
+    args = ap.parse_args()
+
+    with open(args.config, 'r') as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+
+    set_seed(config['seed'])
+    data_type = config['data_type']
+    num_epochs = config['num_epochs']
+    num_concepts = config['num_concepts']
+    loss_weight = config['loss_weight']
+    concept_selector = config["concept_selector"]
+
+    main(args.data_dir, args.output_dir, data_type, num_epochs, num_concepts, loss_weight, concept_selector)
