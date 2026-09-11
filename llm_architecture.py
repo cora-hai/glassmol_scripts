@@ -150,7 +150,7 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
                 elif input_ids.dim() == 3:
                     input_ids = input_ids.squeeze(1)
                     attention_mask = attention_mask.squeeze(1)
-                    
+
                 outputs = model(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True)
                 pooled_output = outputs.hidden_states[-1][:,0]
 
@@ -191,6 +191,16 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
                 label = batch['label'].to(device)
                 concept_labels = batch['concept_labels']
 
+                                # If a 1D tensor was passed, add a batch dimension to make it 2D (1, sequence_length)
+                if input_ids.dim() == 1:
+                    input_ids = input_ids.unsqueeze(0)
+                    attention_mask = attention_mask.unsqueeze(0)
+
+                # If an extra singleton dimension exists (e.g., shape is 3D: batch_size, 1, sequence_length)
+                elif input_ids.dim() == 3:
+                    input_ids = input_ids.squeeze(1)
+                    attention_mask = attention_mask.squeeze(1)
+
                 outputs = model(input_ids=input_ids.squeeze(), attention_mask=attention_mask.squeeze(), output_hidden_states=True)
                 pooled_output = outputs.hidden_states[-1][:,0]
 
@@ -222,6 +232,16 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
             attention_mask = batch['attention_mask'].to(device)
             label = batch['label'].to(device)
             concept_labels = batch['concept_labels']
+
+            # If a 1D tensor was passed, add a batch dimension to make it 2D (1, sequence_length)
+            if input_ids.dim() == 1:
+                input_ids = input_ids.unsqueeze(0)
+                attention_mask = attention_mask.unsqueeze(0)
+
+            # If an extra singleton dimension exists (e.g., shape is 3D: batch_size, 1, sequence_length)
+            elif input_ids.dim() == 3:
+                input_ids = input_ids.squeeze(1)
+                attention_mask = attention_mask.squeeze(1)
 
             outputs = model(input_ids=input_ids.squeeze(), attention_mask=attention_mask.squeeze(), output_hidden_states=True)
             pooled_output = outputs.hidden_states[-1][:,0]
