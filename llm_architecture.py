@@ -141,7 +141,10 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
 
             optimizer.zero_grad()
             with torch.no_grad():
-                outputs = model(input_ids=input_ids.squeeze(), attention_mask=attention_mask.squeeze(), output_hidden_states=True)
+                if input_ids.dim() != 1:
+                    input_ids = input_ids.squeeze()
+                    attention_mask = attention_mask.squeeze()
+                outputs = model(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True)
                 pooled_output = outputs.hidden_states[-1][:,0]
 
             outputs = ModelXtoCtoY_layer(pooled_output)
