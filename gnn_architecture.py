@@ -226,6 +226,7 @@ if __name__ == "__main__":
     ap.add_argument("--config", type = str, help = "path to config yaml file")
     ap.add_argument("--data-dir", type = str, help = "path to input data directory")
     ap.add_argument("--output-dir", type = str, help = "path to directory where outputs and logs will be saved")
+    ap.add_argument("--selector", type = str, help = "concept selection method")
     args = ap.parse_args()
 
     with open(args.config, 'r') as f:
@@ -236,6 +237,5 @@ if __name__ == "__main__":
     num_epochs = config['num_epochs']
     num_concepts = config['num_concepts']
     loss_weight = config['loss_weight']
-    concept_selector = config["concept_selector"]
 
-    main(args.data_dir, args.output_dir, data_type, num_epochs, num_concepts, loss_weight, concept_selector)
+    main(args.data_dir, args.output_dir, data_type, num_epochs, num_concepts, loss_weight, args.selector)
