@@ -20,6 +20,8 @@ from sklearn.svm import LinearSVC
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectFromModel
 
+from greedy_set_cover import get_cover
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_concepts, loss_weight, concept_selector):
@@ -27,9 +29,6 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
     tokenizer = APETokenizer()
     tokenizer.load_vocabulary(f'{tok_folder}/tokenizer.json')
     model = AutoModelForSequenceClassification.from_pretrained('mikemayuare/SMILY-APE-BBBP').to(device)
-    # print("parameter names:")
-    # for name, _ in model.named_parameters():
-    #     print(name)
 
     # load data
     DATA = {}
@@ -45,7 +44,8 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
 
         while found_valid == False:
             # original concept selector from GlassMol paper
-            features = agent(data_type, DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist(), num_concepts).replace("```python", "").replace("```", "")
+            X = DATA['train'].drop(columns=['Drug', 'Y', 'Drug_ID']).columns.tolist()
+            features = agent(data_type, X , num_concepts).replace("```python", "").replace("```", "")
             features = ast.literal_eval(features)
 
             # check if all concepts selected by GPT are valid
@@ -62,6 +62,7 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
             found_valid = True
 
         print(features)
+        print(f"# chosen concepts = {num_concepts} out of {len(X)}")
 
 
     elif concept_selector == "l1":
@@ -78,6 +79,7 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
         num_concepts = len(features)
     
         print(features)
+        print(f"# chosen concepts = {num_concepts} out of {len(X.columns)}")
 
     elif concept_selector == "tree":
         # according to https://scikit-learn.org/stable/modules/feature_selection.html#tree-based-feature-selection
@@ -89,19 +91,27 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
         selector = SelectFromModel(clf, prefit = True)
         feature_mask = selector.get_support()
         features = X.columns[feature_mask].tolist()
+        num_concepts = len(features)
+
         print(features)
-        num_concepts = len(features)
+        print(f"# chosen concepts = {num_concepts} out of {len(X.columns)}")
 
 
-    elif concept_selector == "late-l1":
-        X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
-        features = X.columns.to_list()
+    elif concept_selector == "gsc":
+        X = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID'])
+        features = get_cover(X)
         num_concepts = len(features)
+
+        print(features)
+        print(f"# chosen concepts = {num_concepts} out of {len(X.columns)}")
+
 
     elif concept_selector == "no":
         X, y = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID']), DATA["train"]["Y"]
         features = X.columns.to_list()
         num_concepts = len(features)
+
+        print(f"# chosen concepts = {num_concepts} out of {len(X.columns)}")
 
     else:
         print("choose a valid concept selector method")
