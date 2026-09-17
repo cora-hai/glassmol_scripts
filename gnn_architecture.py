@@ -249,6 +249,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", type = str, help = "path to config yaml file")
     ap.add_argument("--data-dir", type = str, help = "path to input data directory")
+    ap.add_argument("--data-type", type = str, help = "name of dataset")
     ap.add_argument("--output-dir", type = str, help = "path to directory where outputs and logs will be saved")
     ap.add_argument("--selector", type = str, help = "concept selection method")
     args = ap.parse_args()
@@ -257,9 +258,8 @@ if __name__ == "__main__":
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     set_seed(config['seed'])
-    data_type = config['data_type']
     num_epochs = config['num_epochs']
     num_concepts = config['num_concepts']
     loss_weight = config['loss_weight']
 
-    main(args.data_dir, args.output_dir, data_type, num_epochs, num_concepts, loss_weight, args.selector)
+    main(args.data_dir, args.output_dir, args.data_type, num_epochs, num_concepts, loss_weight, args.selector)
