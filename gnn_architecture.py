@@ -19,6 +19,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectFromModel
 
 from greedy_set_cover import get_cover
+from fpmax import run_fpmax
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -105,6 +106,15 @@ def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss
     elif concept_selector == "gsc":
         X = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID'])
         features = get_cover(X)
+        num_concepts = len(features)
+
+        print(features)
+        print(f"# chosen concepts = {num_concepts} out of {len(X.columns)}")
+
+
+    elif concept_selector == "fpmax":
+        X = DATA["train"].drop(columns = ['Drug', 'Y', 'Drug_ID'])
+        features = run_fpmax(X, min_support = 0.5)
         num_concepts = len(features)
 
         print(features)
