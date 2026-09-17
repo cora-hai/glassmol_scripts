@@ -12,7 +12,7 @@ def run_fpmax(sub_df: pd.DataFrame, min_support) -> list:
 
     else:
         # get itemsets with maximal support
-        max_sets = result.iloc[result["support"] == result["support"].max()]["itemsets"]
+        max_sets = result.loc[result["support"] == result["support"].max()]["itemsets"]
 
         if len(max_sets) == 1:
             # if there is a unique solution, return that
