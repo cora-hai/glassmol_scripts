@@ -33,7 +33,7 @@ def main(dataset, model_dir, concept_selector) -> None:
     all_contributions = []
     for batch in test_loader:
         label = batch.y
-        print(f"{batch = }")
+        true_concept_labels = batch.concepts
 
         outputs = model(batch.to(device))
 
