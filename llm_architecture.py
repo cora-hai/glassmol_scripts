@@ -269,7 +269,7 @@ def main(in_data_folder, model_folder, tok_folder, data_type, num_epochs, num_co
             outputs = ModelXtoCtoY_layer(pooled_output)
             XtoY_output = outputs[0:1]
             predictions = np.append(predictions, XtoY_output[0].squeeze().to(torch.float32).cpu())
-            predict_labels = np.append(predict_labels, (XtoY_output[0].squeeze().to(torch.float32).cpu() > 0.0) == label.bool().cpu())
+            predict_labels = np.append(predict_labels, (XtoY_output[0].squeeze().to(torch.float32).cpu() > 0.5) == label.bool().cpu())
 
             true_labels = np.append(true_labels, label.bool().cpu())
 

@@ -229,7 +229,7 @@ def main(in_data_folder, model_folder, data_type, num_epochs, num_concepts, loss
             XtoY_output = outputs[0:1]
 
             predictions = np.append(predictions, XtoY_output[0].squeeze().cpu().numpy())
-            predict_labels = np.append(predict_labels, (XtoY_output[0].squeeze() > 0).int().cpu().numpy())
+            predict_labels = np.append(predict_labels, (XtoY_output[0].squeeze() > 0.5).int().cpu().numpy())
 
             true_labels = np.append(true_labels, data.y.squeeze().cpu().numpy())
 
