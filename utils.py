@@ -154,7 +154,8 @@ class MyDataset(Dataset):
             return_tensors='pt',
         )
 
-        concept_labels = (self.data.iloc[index][self.features].values.astype(float) - self.means) / self.stds
+        #concept_labels = (self.data.iloc[index][self.features].values.astype(float) - self.means) / self.stds
+        concept_labels = self.data.iloc[index][self.features].values.astype(float)
 
         return_dict = {
             'input_ids': tokenized_text['input_ids'],
