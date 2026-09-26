@@ -25,18 +25,22 @@ def main(model_dir, data_dir, model_type, dataset, concept_selector, analyze_mol
     for k, v in contributions_2.items():
         contributions_2[k] = sorted(v, key=lambda x: abs(x['value']), reverse=True)
 
+    print(f"{contributions_2 = }")
+
     # retain the features that have non-zero values in the original data
     contributions_3 = {}
     for k, v in contributions_2.items():
         contributions_3[k] = [i for i in v if data[i['name']].item() != 0]
 
-    print(f'Molecule name: {data["Drug_ID"]}\n' +'='*len(f'Molecule name: {data["Drug_ID"]}'))
-    for idx, i in enumerate(contributions_3[data['Drug_ID']]):
-        print(f'{i["name"]}: {i["value"]:.4f}')
-        print('-'*(len(str(f'{i["name"]}: {i["value"]:.4f}'))-0))
-        if idx > 1:
-            print('...')
-            break
+    print(f"{contributions_3 = }")
+
+    # print(f'Molecule name: {data["Drug_ID"]}\n' +'='*len(f'Molecule name: {data["Drug_ID"]}'))
+    # for idx, i in enumerate(contributions_3[data['Drug_ID']]):
+    #     print(f'{i["name"]}: {i["value"]:.4f}')
+    #     print('-'*(len(str(f'{i["name"]}: {i["value"]:.4f}'))-0))
+    #     if idx > 1:
+    #         print('...')
+    #         break
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

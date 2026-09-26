@@ -34,13 +34,32 @@ def main(dataset, model_dir, concept_selector) -> None:
         label = batch['label']
         concept_labels = batch['concept_labels']
         features = batch['features']
+
+        print(f"{input_ids = }")
+        print(f"{attention_mask = }")
+        print(f"{label = }, {label.shape = }")
+        print(f"{concept_labels = }")
+        print(f"{features = }")
                 
         outputs = model(input_ids=input_ids.to(device), attention_mask=attention_mask.to(device), output_hidden_states=True)
 
-        pooled_output = outputs.hidden_states[-1][:,0] 
+        print(f"{outputs.shape = }")
+        print(f"{outputs = }")
+
+        pooled_output = outputs.hidden_states[-1][:,0]
+
+        print(f"{pooled_output.shape = }")
+        print(f"{pooled_output = }") 
 
         outputs = ModelXtoCtoY_layer(pooled_output)
+
+        print(f"{outputs.shape = }")
+        print(f"{outputs = }")
+
         concepts = torch.stack(outputs[1:], dim=1)
+
+        print(f"{concepts.shape = }")
+        print(f"{concepts = }")
             
         last_layer = None
         for name, m in ModelXtoCtoY_layer.named_modules():
@@ -53,8 +72,14 @@ def main(dataset, model_dir, concept_selector) -> None:
 
         W = last_layer.weight.squeeze()
 
+        print(f"last layer {W = }")
+
         # contribution calculation as seen in the paper
         contributions = concepts.squeeze().detach().cpu().numpy()*W.detach().cpu().numpy()
+
+        print(f"{contributions.shape = }")
+        print(f"{contributions = }")
+
         all_contributions.append(contributions.copy())
 
         for i, feature in enumerate(features):
