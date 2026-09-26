@@ -36,8 +36,15 @@ def main(dataset, model_dir, concept_selector) -> None:
 
         outputs = model(batch.to(device))
 
+        print(f"{outputs = }")
+
         outputs = ModelXtoCtoY_layer(outputs)
+
+        print(f"{outputs = }")
+
         concepts = torch.stack(outputs[1:], dim=1)
+
+        print(f"{concepts = }")
 
         last_layer = None
         for name, m in ModelXtoCtoY_layer.named_modules():
@@ -51,8 +58,12 @@ def main(dataset, model_dir, concept_selector) -> None:
         # get the weights for the last layer
         W = last_layer.weight.squeeze()
 
+        print(f"last layer {W =}")
+
         # contribution calculation as seen in the paper
         contributions = concepts.squeeze().detach().cpu().numpy()*W.detach().cpu().numpy()
+
+        print(f"{contributions = }")
         all_contributions.append(contributions.copy())
 
         for i, feature in enumerate(features):
