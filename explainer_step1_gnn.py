@@ -42,14 +42,16 @@ def main(dataset, model_dir, concept_selector) -> None:
 
         outputs = ModelXtoCtoY_layer(outputs)
 
-        print(f"{outputs[0].shape =}")
+        print(f"{outputs[0].shape = }")
         print(f"{outputs = }")
 
         concepts = torch.stack(outputs[1:], dim=1)
 
         print(f"{concepts.shape =}")
         print(f"{concepts = }")
-        print(f"{true_concept_labels =}")
+
+        peinr(f"{true_concept_labels.shape = }")
+        print(f"{true_concept_labels = }")
 
         last_layer = None
         for name, m in ModelXtoCtoY_layer.named_modules():
