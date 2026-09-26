@@ -53,12 +53,12 @@ def main(dataset, model_dir, concept_selector) -> None:
 
         outputs = ModelXtoCtoY_layer(pooled_output)
 
-        print(f"{outputs.shape = }")
+        #print(f"{outputs.shape = }")
         print(f"{outputs = }")
 
         concepts = torch.stack(outputs[1:], dim=1)
 
-        print(f"{concepts.shape = }")
+        #print(f"{concepts.shape = }")
         print(f"{concepts = }")
             
         last_layer = None
@@ -77,7 +77,7 @@ def main(dataset, model_dir, concept_selector) -> None:
         # contribution calculation as seen in the paper
         contributions = concepts.squeeze().detach().cpu().numpy()*W.detach().cpu().numpy()
 
-        print(f"{contributions.shape = }")
+        #print(f"{contributions.shape = }")
         print(f"{contributions = }")
 
         all_contributions.append(contributions.copy())
