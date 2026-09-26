@@ -22,7 +22,7 @@ def main(dataset, model_dir, concept_selector) -> None:
 
     # load the saved test loader
     with open(f'{model_dir}/test_loader_gnn_{dataset}_{concept_selector}.pkl', 'rb') as f:
-            test_loader = pkl.load(f)
+        test_loader = pkl.load(f)
 
     # load the features
     with open(f'{model_dir}/features_gnn_{dataset}_{concept_selector}.pkl', 'rb') as f:
@@ -33,21 +33,23 @@ def main(dataset, model_dir, concept_selector) -> None:
     all_contributions = []
     for batch in test_loader:
         label = batch.y
+        true_concept_labels = batch['concept_labels']
 
         outputs = model(batch.to(device))
 
-        print(f"{outputs.shape}")
+        print(f"{outputs.shape =}")
         print(f"{outputs = }")
 
         outputs = ModelXtoCtoY_layer(outputs)
 
-        print(f"{outputs[0].shape}")
+        print(f"{outputs[0].shape =}")
         print(f"{outputs = }")
 
         concepts = torch.stack(outputs[1:], dim=1)
 
-        print(f"{concepts.shape}")
+        print(f"{concepts.shape =}")
         print(f"{concepts = }")
+        print(f"{true_concept_labels =}")
 
         last_layer = None
         for name, m in ModelXtoCtoY_layer.named_modules():
