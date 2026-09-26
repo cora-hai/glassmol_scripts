@@ -43,7 +43,7 @@ def main(dataset, model_dir, concept_selector) -> None:
                 
         outputs = model(input_ids=input_ids.to(device), attention_mask=attention_mask.to(device), output_hidden_states=True)
 
-        print(f"{outputs.shape = }")
+        #print(f"{outputs.shape = }")
         print(f"{outputs = }")
 
         pooled_output = outputs.hidden_states[-1][:,0]
