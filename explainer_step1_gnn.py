@@ -50,7 +50,7 @@ def main(dataset, model_dir, concept_selector) -> None:
         print(f"{concepts.shape =}")
         print(f"{concepts = }")
 
-        peinr(f"{true_concept_labels.shape = }")
+        print(f"{true_concept_labels.shape = }")
         print(f"{true_concept_labels = }")
 
         last_layer = None
