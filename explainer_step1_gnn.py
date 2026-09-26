@@ -36,14 +36,17 @@ def main(dataset, model_dir, concept_selector) -> None:
 
         outputs = model(batch.to(device))
 
+        print(f"{outputs.shape}")
         print(f"{outputs = }")
 
         outputs = ModelXtoCtoY_layer(outputs)
 
+        print(f"{outputs[0].shape}")
         print(f"{outputs = }")
 
         concepts = torch.stack(outputs[1:], dim=1)
 
+        print(f"{concepts.shape}")
         print(f"{concepts = }")
 
         last_layer = None
