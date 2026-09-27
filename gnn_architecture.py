@@ -259,7 +259,7 @@ if __name__ == "__main__":
     with open(args.config, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
-    set_seed(config['seed'])
+    #set_seed(config['seed'])
     num_epochs = config['num_epochs']
     num_concepts = config['num_concepts']
     loss_weight = config['loss_weight']
